@@ -24,6 +24,8 @@ void DownloadTask::start() {
         return;
     }
 
+    lastReceived_ = 0;
+
     QFile *file = new QFile(target, this);
     if (!file->open(QIODevice::WriteOnly)) {
         emit finished(false, QStringLiteral("无法写入文件：%1").arg(target), false);
@@ -33,6 +35,9 @@ void DownloadTask::start() {
     reply_ = network_->get(QNetworkRequest(item_.url));
     connect(reply_, &QNetworkReply::readyRead, this, [this, file]() { file->write(reply_->readAll()); });
     connect(reply_, &QNetworkReply::downloadProgress, this, [this](qint64 received, qint64 total) {
+        const qint64 delta = received - lastReceived_;
+        if (delta > 0) emit bytesReceivedDelta(delta);
+        lastReceived_ = received;
         if (total > 0) emit progressChanged(static_cast<int>((received * 100) / total));
     });
     connect(reply_, &QNetworkReply::finished, this, [this, file]() {
