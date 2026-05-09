@@ -33,22 +33,40 @@ jobs:
       - name: Build
         run: cmake --build build --config Release
 
-      - name: Deploy Qt Runtime
+      - name: Package with windeployqt
         shell: pwsh
         run: |
-          $exePath = Resolve-Path "build/Release/VersionDownloadTool.exe"
-          & windeployqt --release --compiler-runtime $exePath
+          $packageDir = "package"
+          New-Item -ItemType Directory -Force -Path $packageDir | Out-Null
 
-      - name: Package
+          Copy-Item "build/Release/VersionDownloadTool.exe" -Destination "$packageDir/VersionDownloadTool.exe" -Force
+
+          windeployqt --release --compiler-runtime --dir $packageDir "$packageDir/VersionDownloadTool.exe"
+
+      - name: Validate packaged Qt runtime
         shell: pwsh
         run: |
-          $staging = "build/package/VersionDownloadTool"
-          New-Item -ItemType Directory -Force -Path $staging | Out-Null
-          Copy-Item "build/Release/VersionDownloadTool.exe" -Destination $staging
-          Copy-Item "build/Release/*.dll" -Destination $staging -ErrorAction SilentlyContinue
-          Compress-Archive -Path "$staging/*" -DestinationPath "build/VersionDownloadTool-win64.zip" -Force
+          $requiredFiles = @(
+            "package/VersionDownloadTool.exe",
+            "package/Qt6Core.dll",
+            "package/Qt6Gui.dll",
+            "package/Qt6Widgets.dll",
+            "package/platforms/qwindows.dll"
+          )
+
+          foreach ($file in $requiredFiles) {
+            if (-not (Test-Path $file)) {
+              Write-Error "Missing required packaged file: $file"
+              exit 1
+            }
+          }
+
+      - name: Archive package
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "package/*" -DestinationPath "VersionDownloadTool-win64.zip" -Force
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
         with:
-          files: build/VersionDownloadTool-win64.zip
+          files: VersionDownloadTool-win64.zip
