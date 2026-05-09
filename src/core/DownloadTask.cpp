@@ -12,7 +12,11 @@ DownloadTask::DownloadTask(const RemoteFileItem &item, const QString &localRoot,
 
 void DownloadTask::start() {
     const QString target = QDir(localRoot_).filePath(item_.relativePath);
-    QDir().mkpath(QFileInfo(target).path());
+    const QString parentDir = QFileInfo(target).path();
+    if (!QDir().mkpath(parentDir)) {
+        emit finished(false, QStringLiteral("创建目录失败：%1").arg(parentDir), false);
+        return;
+    }
 
     QFileInfo info(target);
     if (info.exists() && item_.size >= 0 && info.size() == item_.size) {
