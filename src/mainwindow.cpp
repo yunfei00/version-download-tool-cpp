@@ -181,7 +181,11 @@ void MainWindow::updateStatsUi(const DownloadManager::Statistics &stats) {
     QString totalSize = formatBytes(stats.totalKnownBytes);
     if (stats.totalFiles > 0 && stats.totalKnownBytes >= 0) {
         int unknown = 0;
-        for (const auto &item : model_->items()) if (item.size < 0) ++unknown;
+        for (const auto &item : model_->items()) {
+            if (item.size < 0) {
+                ++unknown;
+            }
+        }
         if (unknown > 0) totalSize += QStringLiteral(" + %1个未知文件").arg(unknown);
     }
     statsLabel_->setText(QStringLiteral("文件 %1/%2 失败:%3 跳过:%4 | 总大小:%5 | 已下载:%6 | 速度:%7/s | 已用:%8 | 剩余:%9")
