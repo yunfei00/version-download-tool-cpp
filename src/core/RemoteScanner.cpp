@@ -3,6 +3,20 @@
 #include <QNetworkReply>
 #include <QRegularExpression>
 
+namespace {
+QString normalizeHref(const QString &href) {
+    return href.section('#', 0, 0).section('?', 0, 0).trimmed();
+}
+
+bool shouldSkipHref(const QString &href) {
+    if (href.isEmpty()) return true;
+    if (href.startsWith('#') || href.startsWith('?')) return true;
+    if (href == QStringLiteral("../") || href == QStringLiteral("..")) return true;
+    if (href.contains(QStringLiteral("?C="), Qt::CaseInsensitive)) return true;
+    return false;
+}
+}
+
 RemoteScanner::RemoteScanner(QObject *parent) : QObject(parent) {}
 
 void RemoteScanner::scan(const QUrl &baseUrl) {
@@ -63,16 +77,27 @@ void RemoteScanner::handleDirectoryResponse(const QUrl &dirUrl, const QString &r
     while (it.hasNext()) {
         const QRegularExpressionMatch match = it.next();
         const QString href = match.captured(1).trimmed();
-        if (href.isEmpty() || href.startsWith('#') || href == QStringLiteral("../") || href.startsWith('?') || href.contains(QStringLiteral("?C="))) {
+        if (shouldSkipHref(href)) {
+            continue;
+        }
+
+        const QString cleaned = normalizeHref(href);
+        if (cleaned.isEmpty() || cleaned == QStringLiteral(".") || cleaned == QStringLiteral("..")) {
             continue;
         }
 
         const QUrl resolved = dirUrl.resolved(QUrl(href));
-        if (resolved.host().compare(baseUrl_.host(), Qt::CaseInsensitive) != 0) {
+        if (!resolved.isValid()) {
+            continue;
+        }
+        if (resolved.scheme() != QStringLiteral("http") && resolved.scheme() != QStringLiteral("https")) {
+            continue;
+        }
+        if (resolved.host().compare(baseUrl_.host(), Qt::CaseInsensitive) != 0
+            || resolved.port(baseUrl_.port()) != baseUrl_.port(resolved.port())) {
             continue;
         }
 
-        const QString cleaned = href.section('#', 0, 0).section('?', 0, 0);
         if (isLikelyDirectoryLink(cleaned)) {
             QString dirName = cleaned;
             if (dirName.endsWith('/')) dirName.chop(1);
@@ -88,7 +113,7 @@ void RemoteScanner::handleDirectoryResponse(const QUrl &dirUrl, const QString &r
         item.size = -1;
 
         const QString trailing = match.captured(3);
-        QRegularExpression sizeRegex(QStringLiteral(R"((\d+(?:\.\d+)?)\s*([KMG]?B))"), QRegularExpression::CaseInsensitiveOption);
+        QRegularExpression sizeRegex(QStringLiteral(R"((\d+(?:\.\d+)?)\s*([KMGT]?B))"), QRegularExpression::CaseInsensitiveOption);
         QRegularExpressionMatch sizeMatch = sizeRegex.match(trailing);
         if (sizeMatch.hasMatch()) {
             double v = sizeMatch.captured(1).toDouble();
@@ -96,6 +121,7 @@ void RemoteScanner::handleDirectoryResponse(const QUrl &dirUrl, const QString &r
             if (unit == QStringLiteral("KB")) v *= 1024.0;
             else if (unit == QStringLiteral("MB")) v *= 1024.0 * 1024.0;
             else if (unit == QStringLiteral("GB")) v *= 1024.0 * 1024.0 * 1024.0;
+            else if (unit == QStringLiteral("TB")) v *= 1024.0 * 1024.0 * 1024.0 * 1024.0;
             item.size = static_cast<qint64>(v);
         }
 
