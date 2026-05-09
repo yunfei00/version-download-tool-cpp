@@ -8,6 +8,8 @@ class QLineEdit;
 class QPushButton;
 class QPlainTextEdit;
 class QTableView;
+class QLabel;
+class QProgressBar;
 class DownloadTableModel;
 class RemoteScanner;
 class DownloadManager;
@@ -25,8 +27,15 @@ private slots:
     void stopDownload();
 
 private:
+    enum class UiState { Idle, Scanning, Ready, Downloading, Stopping, Finished, Failed };
+
     void setupUi();
     void appendLog(const QString &message);
+    bool validateInputs(QUrl *urlOut = nullptr);
+    void applyState(UiState state);
+    void updateStatsUi(const DownloadManager::Statistics &stats);
+    static QString formatBytes(qint64 bytes);
+    static QString formatDuration(qint64 seconds);
     void loadSettings();
     void saveSettings();
 
@@ -38,8 +47,12 @@ private:
     QPushButton *stopButton_ = nullptr;
     QTableView *fileTable_ = nullptr;
     QPlainTextEdit *logOutput_ = nullptr;
+    QLabel *statsLabel_ = nullptr;
+    QProgressBar *overallProgress_ = nullptr;
 
     DownloadTableModel *model_ = nullptr;
     RemoteScanner *scanner_ = nullptr;
     DownloadManager *downloader_ = nullptr;
+    UiState state_ = UiState::Idle;
+    bool autoStartDownloadAfterScan_ = false;
 };

@@ -113,8 +113,10 @@ void RemoteScanner::handleDirectoryResponse(const QUrl &dirUrl, const QString &r
         item.size = -1;
 
         const QString trailing = match.captured(3);
-        QRegularExpression sizeRegex(QStringLiteral(R"((\d+(?:\.\d+)?)\s*([KMGT]?B))"), QRegularExpression::CaseInsensitiveOption);
-        QRegularExpressionMatch sizeMatch = sizeRegex.match(trailing);
+        QRegularExpression sizeRegex(QStringLiteral(R"((?:^|\s)(\d+(?:\.\d+)?)\s*([KMGT]?B)(?=\s|$))"), QRegularExpression::CaseInsensitiveOption);
+        QRegularExpressionMatchIterator sizeMatches = sizeRegex.globalMatch(trailing);
+        QRegularExpressionMatch sizeMatch;
+        while (sizeMatches.hasNext()) sizeMatch = sizeMatches.next();
         if (sizeMatch.hasMatch()) {
             double v = sizeMatch.captured(1).toDouble();
             const QString unit = sizeMatch.captured(2).toUpper();

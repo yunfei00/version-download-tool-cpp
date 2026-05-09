@@ -17,6 +17,7 @@ public:
 
 signals:
     void progressChanged(int percent);
+    void bytesReceivedDelta(qint64 delta);
     void finished(bool ok, const QString &message, bool skipped);
 
 private:
@@ -24,5 +25,6 @@ private:
     QString localRoot_;
     QNetworkAccessManager *network_ = nullptr;
     QNetworkReply *reply_ = nullptr;
+    qint64 lastReceived_ = 0;
     bool canceled_ = false;
 };
