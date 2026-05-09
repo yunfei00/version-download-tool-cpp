@@ -29,7 +29,7 @@ qt_add_executable(VersionDownloadTool
     src/ui/DownloadTableModel.cpp
 )
 
-target_link_libraries(VersionDownloadTool PRIVATE Qt6::Widgets Qt6::Network)
+target_link_libraries(VersionDownloadTool PRIVATE Qt6::Core Qt6::Widgets Qt6::Network)
 
 set_target_properties(VersionDownloadTool PROPERTIES
     WIN32_EXECUTABLE TRUE
