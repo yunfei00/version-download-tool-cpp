@@ -1,11 +1,11 @@
 #pragma once
 
+#include <QFile>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
 #include <QObject>
 
 #include "RemoteFileItem.h"
-
-class QNetworkAccessManager;
-class QNetworkReply;
 
 class DownloadTask : public QObject {
     Q_OBJECT
@@ -21,10 +21,11 @@ signals:
     void finished(bool ok, const QString &message, bool skipped);
 
 private:
-    RemoteFileItem item_;
-    QString localRoot_;
-    QNetworkAccessManager *network_ = nullptr;
-    QNetworkReply *reply_ = nullptr;
-    qint64 lastReceived_ = 0;
-    bool canceled_ = false;
+    RemoteFileItem m_item;
+    QString m_localRoot;
+    QNetworkReply *m_reply = nullptr;
+    QFile m_outputFile;
+    QNetworkAccessManager *m_manager = nullptr;
+    qint64 m_lastReceived = 0;
+    bool m_canceled = false;
 };
