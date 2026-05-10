@@ -105,4 +105,4 @@ void DownloadManager::updateStatisticsTick() {
     emitStatistics();
 }
 
-void DownloadManager::emitStatistics() { emit statisticsUpdated(stats_); }
+void DownloadManager::emitStatistics() { emit statisticsChanged(stats_); }

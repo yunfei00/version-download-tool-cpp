@@ -36,7 +36,7 @@ signals:
     void rowStatusChanged(int row, const QString &status, int progress);
     void currentRowChanged(int row);
     void allFinished();
-    void statisticsUpdated(const DownloadManager::Statistics &stats);
+    void statisticsChanged(const DownloadManager::Statistics &stats);
 
 private:
     void startNext();

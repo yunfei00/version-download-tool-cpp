@@ -3,6 +3,7 @@
 #include <QMainWindow>
 
 #include "core/RemoteFileItem.h"
+#include "core/DownloadManager.h"
 
 class QLineEdit;
 class QPushButton;
@@ -12,7 +13,6 @@ class QLabel;
 class QProgressBar;
 class DownloadTableModel;
 class RemoteScanner;
-class DownloadManager;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
