@@ -17,6 +17,7 @@
 #include <QWidget>
 
 #include "core/DownloadManager.h"
+#include "core/RemoteFileItem.h"
 #include "core/RemoteScanner.h"
 #include "ui/DownloadTableModel.h"
 
@@ -181,7 +182,9 @@ void MainWindow::updateStatsUi(const DownloadManager::Statistics &stats) {
     QString totalSize = formatBytes(stats.totalKnownBytes);
     if (stats.totalFiles > 0 && stats.totalKnownBytes >= 0) {
         int unknown = 0;
-        for (const auto &item : model_->items()) {
+        const QList<RemoteFileItem> currentItems = model_->items();
+        for (int i = 0; i < currentItems.size(); ++i) {
+            const RemoteFileItem &item = currentItems.at(i);
             if (item.size < 0) {
                 ++unknown;
             }
@@ -208,7 +211,18 @@ QString MainWindow::formatBytes(qint64 bytes) {
 }
 
 QString MainWindow::formatDuration(qint64 seconds) {
-    return QStringLiteral("%1:%2").arg(seconds / 60, 2, 10, QLatin1Char('0')).arg(seconds % 60, 2, 10, QLatin1Char('0'));
+    if (seconds < 0) {
+        return QStringLiteral("未知");
+    }
+
+    const qint64 hours = seconds / 3600;
+    const qint64 minutes = (seconds % 3600) / 60;
+    const qint64 secs = seconds % 60;
+
+    return QStringLiteral("%1:%2:%3")
+        .arg(hours, 2, 10, QLatin1Char('0'))
+        .arg(minutes, 2, 10, QLatin1Char('0'))
+        .arg(secs, 2, 10, QLatin1Char('0'));
 }
 
 void MainWindow::loadSettings() {
