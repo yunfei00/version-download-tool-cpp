@@ -15,8 +15,11 @@ void DownloadManager::start(const QList<RemoteFileItem> &items, const QString &l
     stopped_ = false;
     resetStatistics();
     stats_.totalFiles = items_.size();
-    for (const auto &item : items_) {
-        if (item.size >= 0) stats_.totalKnownBytes += item.size;
+    for (int i = 0; i < items_.size(); ++i) {
+        const RemoteFileItem &item = items_.at(i);
+        if (item.size >= 0) {
+            stats_.totalKnownBytes += item.size;
+        }
     }
     elapsedTimer_.start();
     connect(&statsTimer_, &QTimer::timeout, this, &DownloadManager::updateStatisticsTick, Qt::UniqueConnection);
