@@ -45,7 +45,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     connect(downloader_, &DownloadManager::currentRowChanged, this, [this](int row) {
         fileTable_->scrollTo(model_->index(row, 0), QAbstractItemView::PositionAtCenter);
     });
-    connect(downloader_, &DownloadManager::statisticsUpdated, this, &MainWindow::updateStatsUi);
+    connect(downloader_, &DownloadManager::statisticsChanged, this, &MainWindow::updateStatsUi);
     connect(downloader_, &DownloadManager::allFinished, this, [this]() { applyState(UiState::Finished); });
     applyState(UiState::Idle);
 }
