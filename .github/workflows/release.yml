@@ -78,8 +78,15 @@ jobs:
       - name: Validate installer artifact
         shell: pwsh
         run: |
-          if (-not (Test-Path "VersionDownloadTool-Setup.exe")) {
-            Write-Error "Missing installer artifact: VersionDownloadTool-Setup.exe"
+          Write-Host "Listing dist directory"
+          if (Test-Path "dist") {
+            Get-ChildItem dist -Recurse
+          } else {
+            Write-Host "dist directory does not exist"
+          }
+
+          if (-not (Test-Path "dist/VersionDownloadTool-Setup.exe")) {
+            Write-Error "Missing installer artifact: dist/VersionDownloadTool-Setup.exe"
             exit 1
           }
 
@@ -88,4 +95,4 @@ jobs:
         with:
           files: |
             VersionDownloadTool-win64.zip
-            VersionDownloadTool-Setup.exe
+            dist/VersionDownloadTool-Setup.exe
