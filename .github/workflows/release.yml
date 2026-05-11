@@ -66,7 +66,26 @@ jobs:
         run: |
           Compress-Archive -Path "package/*" -DestinationPath "VersionDownloadTool-win64.zip" -Force
 
-      - name: Upload Release Asset
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y
+
+      - name: Build installer with Inno Setup
+        shell: pwsh
+        run: |
+          ISCC.exe "installer/VersionDownloadTool.iss"
+
+      - name: Validate installer artifact
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "VersionDownloadTool-Setup.exe")) {
+            Write-Error "Missing installer artifact: VersionDownloadTool-Setup.exe"
+            exit 1
+          }
+
+      - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
-          files: VersionDownloadTool-win64.zip
+          files: |
+            VersionDownloadTool-win64.zip
+            VersionDownloadTool-Setup.exe
