@@ -18,8 +18,11 @@ public:
     void setItems(const QList<RemoteFileItem> &items);
     QList<RemoteFileItem> items() const;
     void updateRow(int row, const QString &status, int progress);
+    void setCurrentRow(int row);
+    int currentRow() const;
 
 private:
     static QString formatSize(qint64 size);
     QList<RemoteFileItem> items_;
+    int m_currentRow = -1;
 };

@@ -10,6 +10,7 @@
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QProgressBar>
+#include <QGroupBox>
 #include <QSettings>
 #include <QTableView>
 #include <QUrl>
@@ -43,10 +44,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
         model_->updateRow(row, status, progress);
     });
     connect(downloader_, &DownloadManager::currentRowChanged, this, [this](int row) {
+        model_->setCurrentRow(row);
+        fileTable_->selectRow(row);
         fileTable_->scrollTo(model_->index(row, 0), QAbstractItemView::PositionAtCenter);
     });
     connect(downloader_, &DownloadManager::statisticsChanged, this, &MainWindow::updateStatsUi);
-    connect(downloader_, &DownloadManager::allFinished, this, [this]() { applyState(UiState::Finished); });
+    connect(downloader_, &DownloadManager::allFinished, this, [this]() {
+        model_->setCurrentRow(-1);
+        applyState(UiState::Finished);
+    });
     applyState(UiState::Idle);
 }
 
@@ -60,42 +66,57 @@ void MainWindow::setupUi() {
     setCentralWidget(central);
 
     auto *mainLayout = new QVBoxLayout(central);
-    auto *topLayout = new QHBoxLayout();
 
-    auto *configWidget = new QWidget(central);
-    auto *configLayout = new QVBoxLayout(configWidget);
-    configLayout->setContentsMargins(0, 0, 0, 0);
+    auto *configGroup = new QGroupBox(QStringLiteral("下载配置"), central);
+    auto *configLayout = new QVBoxLayout(configGroup);
 
-    auto *remoteLabel = new QLabel(QStringLiteral("远程版本地址"), configWidget);
-    remoteUrlEdit_ = new QLineEdit(configWidget);
-    auto *localLabel = new QLabel(QStringLiteral("本地保存目录"), configWidget);
-    localDirEdit_ = new QLineEdit(configWidget);
-    chooseDirButton_ = new QPushButton(QStringLiteral("选择目录"), configWidget);
-    scanButton_ = new QPushButton(QStringLiteral("扫描"), configWidget);
-    downloadButton_ = new QPushButton(QStringLiteral("开始下载"), configWidget);
-    stopButton_ = new QPushButton(QStringLiteral("停止下载"), configWidget);
+    auto *remoteLabel = new QLabel(QStringLiteral("远程版本地址"), configGroup);
+    remoteUrlEdit_ = new QLineEdit(configGroup);
+    remoteUrlEdit_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    remoteUrlEdit_->setMinimumWidth(520);
+    remoteUrlEdit_->setFixedHeight(34);
+    remoteUrlEdit_->setPlaceholderText(QStringLiteral("http://server/releases/version/"));
+    remoteUrlEdit_->setCursorMoveStyle(Qt::LogicalMoveStyle);
+
+    auto *localLabel = new QLabel(QStringLiteral("本地保存目录"), configGroup);
+    localDirEdit_ = new QLineEdit(configGroup);
+    localDirEdit_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    localDirEdit_->setMinimumWidth(520);
+    localDirEdit_->setFixedHeight(34);
+    localDirEdit_->setPlaceholderText(QStringLiteral("D:/downloads/version/"));
+    chooseDirButton_ = new QPushButton(QStringLiteral("选择目录"), configGroup);
+
+    auto *localRowLayout = new QHBoxLayout();
+    localRowLayout->addWidget(localDirEdit_, 1);
+    localRowLayout->addWidget(chooseDirButton_);
+
+    scanButton_ = new QPushButton(QStringLiteral("扫描"), configGroup);
+    downloadButton_ = new QPushButton(QStringLiteral("开始下载"), configGroup);
+    stopButton_ = new QPushButton(QStringLiteral("停止下载"), configGroup);
+    clearButton_ = new QPushButton(QStringLiteral("清空"), configGroup);
+
+    auto *actionRowLayout = new QHBoxLayout();
+    actionRowLayout->addWidget(scanButton_);
+    actionRowLayout->addWidget(downloadButton_);
+    actionRowLayout->addWidget(stopButton_);
+    actionRowLayout->addWidget(clearButton_);
+    actionRowLayout->addStretch();
 
     configLayout->addWidget(remoteLabel);
     configLayout->addWidget(remoteUrlEdit_);
     configLayout->addWidget(localLabel);
-    configLayout->addWidget(localDirEdit_);
-    configLayout->addWidget(chooseDirButton_);
-    configLayout->addWidget(scanButton_);
-    configLayout->addWidget(downloadButton_);
-    configLayout->addWidget(stopButton_);
-    configLayout->addStretch();
+    configLayout->addLayout(localRowLayout);
+    configLayout->addLayout(actionRowLayout);
 
     model_ = new DownloadTableModel(this);
     fileTable_ = new QTableView(central);
     fileTable_->setModel(model_);
     fileTable_->verticalHeader()->setVisible(false);
     fileTable_->setSelectionBehavior(QAbstractItemView::SelectRows);
+    fileTable_->setSelectionMode(QAbstractItemView::SingleSelection);
     fileTable_->setEditTriggers(QAbstractItemView::NoEditTriggers);
     fileTable_->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     fileTable_->horizontalHeader()->setStretchLastSection(true);
-
-    topLayout->addWidget(configWidget, 0);
-    topLayout->addWidget(fileTable_, 1);
 
     logOutput_ = new QPlainTextEdit(central);
     logOutput_->setReadOnly(true);
@@ -103,7 +124,8 @@ void MainWindow::setupUi() {
     overallProgress_ = new QProgressBar(central);
     overallProgress_->setRange(0, 100);
 
-    mainLayout->addLayout(topLayout, 3);
+    mainLayout->addWidget(configGroup);
+    mainLayout->addWidget(fileTable_, 3);
     mainLayout->addWidget(statsLabel_);
     mainLayout->addWidget(overallProgress_);
     mainLayout->addWidget(logOutput_, 1);
@@ -112,6 +134,7 @@ void MainWindow::setupUi() {
     connect(scanButton_, &QPushButton::clicked, this, &MainWindow::scanVersions);
     connect(downloadButton_, &QPushButton::clicked, this, &MainWindow::startDownload);
     connect(stopButton_, &QPushButton::clicked, this, &MainWindow::stopDownload);
+    connect(clearButton_, &QPushButton::clicked, this, &MainWindow::clearListAndLog);
 }
 
 void MainWindow::appendLog(const QString &message) {
@@ -158,6 +181,14 @@ void MainWindow::startDownload() {
 void MainWindow::stopDownload() {
     applyState(UiState::Stopping);
     downloader_->stop();
+}
+
+void MainWindow::clearListAndLog() {
+    model_->setItems({});
+    model_->setCurrentRow(-1);
+    logOutput_->clear();
+    overallProgress_->setValue(0);
+    statsLabel_->clear();
 }
 
 bool MainWindow::validateInputs(QUrl *urlOut) {
