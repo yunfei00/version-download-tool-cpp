@@ -25,6 +25,7 @@ private slots:
     void scanVersions();
     void startDownload();
     void stopDownload();
+    void clearListAndLog();
 
 private:
     enum class UiState { Idle, Scanning, Ready, Downloading, Stopping, Finished, Failed };
@@ -45,6 +46,7 @@ private:
     QPushButton *scanButton_ = nullptr;
     QPushButton *downloadButton_ = nullptr;
     QPushButton *stopButton_ = nullptr;
+    QPushButton *clearButton_ = nullptr;
     QTableView *fileTable_ = nullptr;
     QPlainTextEdit *logOutput_ = nullptr;
     QLabel *statsLabel_ = nullptr;
